@@ -15,6 +15,7 @@ using namespace family;
 
 bool _male;
 int _gens=0;
+bool _found=false;
 
 
 /*
@@ -103,6 +104,23 @@ void tokenize(string str)
 		end = str.find(delim, start);
 		out.push_back(str.substr(start, end - start));
 	}
+//if(strcmp(name.c_str(),_father->_name.c_str())==0){
+    for(int i=0; i<out.size()-1;i++){
+        if(strcmp(out[i].c_str(),"grand")==0)
+        throw "invalid relation";
+    }
+
+    if(out.size()==1){
+         if(strcmp(out[0].c_str(),"father")!=0 && strcmp(out[0].c_str(),"mother")!=0 &&
+         strcmp(out[0].c_str(),"grandfather")!=0 && strcmp(out[0].c_str(),"grandmother")!=0)
+         throw "invalid relation";
+    }
+
+    if(out.size()>1){
+        int len=out.size()-1;
+        if(strcmp(out[len].c_str(),"grandfather")!=0 && strcmp(out[len].c_str(),"grandmother")!=0)
+        throw "invalid relation";
+    }
 
     _gens=out.size();
     printf("_gens at first is %d\n",_gens);
@@ -147,8 +165,10 @@ node* Tree::findNode(string name){
 Tree& Tree::addFather(string name, string father){
     std::printf("start of addfather, adding name: %s\n", name.c_str());
     node * node=_root->findNode(name);
-    if(node!=NULL)
+    if(node!=NULL && node->_father==NULL)
     node->setFather(father);
+    else if(node!=NULL && node->_father!=NULL)
+    throw "already has father";
     else throw "no"+name;
     return *this;
 }
@@ -156,15 +176,17 @@ Tree& Tree::addFather(string name, string father){
 Tree& Tree::addMother(string name, string mother){
     std::printf("start of addfather, adding name: %s\n", name.c_str());
     node * node=_root->findNode(name);
-    if(node!=NULL)
+    if(node!=NULL && node->_mother==NULL)
     node->setMother(mother);
+    else if(node!=NULL && node->_mother!=NULL)
+    throw "already has mother";
     else throw "no"+name;
     return *this;
     
 }
 
 string Tree::find(string relation){
-     std::printf("start of tree::find,  name: %s\n",relation.c_str());
+    std::printf("start of tree::find,  name: %s\n",relation.c_str());
     tokenize(relation);
     int gens=_gens;
     node* node;
@@ -323,6 +345,7 @@ void node::remove(string name){
     std::printf("start of node::remove,  name: %s\n", name.c_str());
     if(_father!=NULL){
         if(strcmp(name.c_str(),_father->_name.c_str())==0){
+            _found=true;
             printf("deleting node with name: %s\n",_father->_name.c_str());
             _father->deleteAll();
             printf("before delete(father)\n");
@@ -337,6 +360,7 @@ void node::remove(string name){
     }
     if(_mother!=NULL){
         if(strcmp(name.c_str(),_mother->_name.c_str())==0){
+            _found=true;
             printf("deleting node with name: %s\n",_mother->_name.c_str());
             _mother->deleteAll();
             delete(_mother);
@@ -349,15 +373,22 @@ void node::remove(string name){
 }
 
 void Tree::remove(string name){
+    _found=false;
+    if(strcmp(name.c_str(),_root->_name.c_str())==0){
+        _found=true;
+        throw "trying to remove descendant";
+    }
      std::printf("start of tree::remove,  name: %s\n", name.c_str());
      if(strcmp(name.c_str(),_root->_name.c_str())==0){
          printf("delete root\n");
+         _found=true;
         _root->deleteAll();
         delete(this);
      }
      else{
      if(_root->_father!=NULL){
          if(strcmp(name.c_str(),_root->_father->_name.c_str())==0){
+             _found=true;
              _root->_father->deleteAll();
              printf("deleting father\n");
             delete(_root->_father);
@@ -367,6 +398,7 @@ void Tree::remove(string name){
      }
      if(_root->_mother!=NULL){
          if(strcmp(name.c_str(),_root->_mother->_name.c_str())==0){
+             _found=true;
              _root->_mother->deleteAll();
              printf("deleting mother\n");
              delete(_root->_mother);
@@ -375,6 +407,8 @@ void Tree::remove(string name){
          else _root->_mother->remove(name);
      }
      }
+     if(_found==false)
+     throw "removing a non-existant person";
 }
 
 
